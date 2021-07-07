@@ -85,6 +85,7 @@ class AmrexParticleFile:
                                   self.num_ints), dtype=np.int)
 
         idata = self.int_data
+        #print(idata)
         rdata = self.real_data
         nints = self.num_ints + 2
         nreals = self.num_reals + self.ndim
@@ -103,10 +104,17 @@ class AmrexParticleFile:
                 rvals = np.fromfile(fh, dtype=np.float, count=nreals*npts)
 
                 for i, ii in enumerate(range(0, nints * npts, nints)):
-                    pidx = ivals[ii + 2]
+                    #print(i, ii)
+                    #print(ivals)
+                    #print(ivals.shape)
+                    #print(idata.shape)
+                    #pidx = ivals[ii + 2]
+                    pidx = ivals[ii + 2]-1
+                    #print(pidx)
                     idata[pidx, 0] = pidx
                     idata[pidx, 1] = ivals[ii + 3]
                     idata[pidx, 2] = ivals[ii + 4]
+                    #print('*****')
 
                     offset = i * nreals
                     for jj in range(nreals):
