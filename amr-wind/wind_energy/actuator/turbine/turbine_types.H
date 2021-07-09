@@ -35,6 +35,7 @@ struct ComponentView
     RealSlice chord;
 };
 
+using DeviceVecComponent = amrex::Gpu::DeviceVector<ComponentView>;
 struct TurbineBaseData
 {
     //! Number of blades
@@ -79,6 +80,7 @@ struct TurbineBaseData
 
     std::vector<ComponentView> blades;
     ComponentView tower;
+    ComponentView hub;
 };
 
 struct TurbineType : public ActuatorType
