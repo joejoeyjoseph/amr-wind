@@ -28,16 +28,17 @@ class AmrexParticleFile:
             root_dir (path): Path to the post_processing directory
         """
         fpath = Path(root_dir) / ("%s%05d"%(label, time_index))
-        self.tower_num = tower_num
-        return cls(fpath)
+        return cls(fpath, tower_num)
 
-    def __init__(self, pdir):
+    def __init__(self, pdir, tower_num):
         """
         Args:
             pdir (path): Directory path
         """
         self.pdir = Path(pdir)
         assert self.pdir.exists()
+
+        self.tower_num = tower_num
 
     def __call__(self):
         """Parse the header and load all binary files
@@ -62,19 +63,17 @@ class AmrexParticleFile:
             self.num_ints = int(fh.readline().strip())
             self.int_var_names = [fh.readline().strip() for _ in
                                   range(self.num_ints)]
-            print(self.ndim, self.num_reals, self.num_ints)
+            #print(self.ndim, self.num_reals, self.num_ints)
             # skip flag
             fh.readline()
             self.num_particles = int(fh.readline().strip())
             self.next_id = int(fh.readline().strip())
             self.finest_level = int(fh.readline().strip())
-            print(self.finest_level, self.num_particles, self.next_id)
+            #print(self.finest_level, self.num_particles, self.next_id)
 
             self.num_grids = np.empty((self.finest_level+1,), dtype=np.int)
             self.grid_info = []
             for lev in range(self.finest_level+1):
-                print('aaa')
-                print(lev)
                 ginfo = []
                 self.num_grids[lev] = int(fh.readline().strip())
                 for _ in range(self.num_grids[lev]):
@@ -96,12 +95,12 @@ class AmrexParticleFile:
         nreals = self.num_reals + self.ndim
         #print(self.grid_info)
         for lev, ginfo in enumerate(self.grid_info):
-            print('lev')
-            print(lev)
+            #print('lev')
+            #print(lev)
             bfiles = {}
             for idx, npts, offset in ginfo:
-                print('idx')
-                print(idx, npts, offset)
+                #print('idx')
+                #print(idx, npts, offset)
                 if npts < 1:
                     continue
                 fname = self.bin_file_name(lev, idx)
@@ -109,27 +108,27 @@ class AmrexParticleFile:
                 if fstr not in bfiles:
                     bfiles[fstr] = open(fname, 'rb')
                 fh = bfiles[fstr]
-                print('fh', fh)
+                #print('fh', fh)
                 fh.seek(offset)
                 ivals = np.fromfile(fh, dtype=np.int32, count=nints*npts)
                 rvals = np.fromfile(fh, dtype=np.float, count=nreals*npts)
                 #print(ivals)
                 #print(ivals.shape)
-                print(nints, npts)
-                print('#####')
+                #print(nints, npts)
+                #print('#####')
 
                 for i, ii in enumerate(range(0, nints * npts, nints)):
-                    print(i, ii)
+                    #print(i, ii)
                     #print(ivals)
                     #print(ivals.shape)
-                    print(idata.shape)
+                    #print(idata.shape)
                     #pidx = ivals[ii + 2]
                     pidx = ivals[ii + 2]-self.tower_num+1
-                    print(pidx)
+                    #print(pidx)
                     idata[pidx, 0] = pidx
                     idata[pidx, 1] = ivals[ii + 3]
                     idata[pidx, 2] = ivals[ii + 4]
-                    print('*****')
+                    #print('*****')
 
                     offset = i * nreals
                     for jj in range(nreals):
@@ -142,8 +141,8 @@ class AmrexParticleFile:
         rdict = {key: rdata[:, i] for i, key in enumerate(rvar_names)}
         idict.update(rdict)
         self.df = pd.DataFrame(idict, index=idata[:,0])
-        print('%%%%%')
-        print(self.df.shape)
+        #print('%%%%%')
+        #print(self.df.shape)
 
     def bin_file_name(self, lev, idx):
         """Return the name of the binary file"""
