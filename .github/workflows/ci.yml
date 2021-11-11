@@ -207,28 +207,21 @@ jobs:
           submodules: true
       - name: Prepare HIP environment
         run: |
-          export DEBIAN_FRONTEND=noninteractive
           wget -q -O - http://repo.radeon.com/rocm/rocm.gpg.key | sudo apt-key add -
-          #Use HIP 4.1.1 until 4.2 is fixed
-          echo 'deb [arch=amd64] http://repo.radeon.com/rocm/apt/4.1.1/ xenial main' | sudo tee /etc/apt/sources.list.d/rocm.list
-          echo 'export PATH=$PATH:/opt/rocm/bin:/opt/rocm/profiler/bin:/opt/rocm/opencl/bin' | sudo tee -a /etc/profile.d/rocm.sh
+          echo 'deb [arch=amd64] http://repo.radeon.com/rocm/apt/debian/ ubuntu main' | sudo tee /etc/apt/sources.list.d/rocm.list
+          echo 'export PATH=/opt/rocm/llvm/bin:/opt/rocm/bin:/opt/rocm/profiler/bin:/opt/rocm/opencl/bin:$PATH' | sudo tee -a /etc/profile.d/rocm.sh
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential rocm-dev roctracer-dev rocprofiler-dev rocrand rocprim
+          sudo apt-get install -y --no-install-recommends build-essential rocm-dev roctracer-dev rocprofiler-dev rocrand-dev rocprim-dev rocm-libs
       - name: Configure and build
         run: |
           source /etc/profile.d/rocm.sh
-          export PATH=/opt/rocm-4.1.1/llvm/bin:$PATH
-          hipcc --version
           which clang
           which clang++
           cmake -B build \
             -DAMR_WIND_ENABLE_MPI=OFF \
             -DAMR_WIND_ENABLE_HIP=ON \
-            -DCMAKE_CXX_COMPILER=$(which hipcc) \
+            -DCMAKE_CXX_COMPILER=$(which clang++) \
             -DCMAKE_C_COMPILER=$(which clang) \
-            -DCMAKE_CXX_COMPILER_ID=Clang \
-            -DCMAKE_CXX_COMPILER_VERSION=12.0 \
-            -DCMAKE_CXX_STANDARD_COMPUTED_DEFAULT=17 \
             -DCMAKE_VERBOSE_MAKEFILE=ON \
             -DAMReX_AMD_ARCH=gfx908 .
           cmake --build build -- -j $(nproc)
@@ -278,17 +271,17 @@ jobs:
             -DAMR_WIND_ENABLE_MPI=OFF \
             -DAMR_WIND_ENABLE_DPCPP=${{matrix.enable_dpcpp}} .
           cmake --build build-${{matrix.intel_type}} -- -j $(nproc)
-  Docker:
-    needs: Formatting
-    name: Docker
-    runs-on: ubuntu-latest
-    steps:
-      - name: Cancel previous runs
-        uses: styfle/cancel-workflow-action@0.6.0
-        with:
-          access_token: ${{github.token}}
-      - uses: actions/checkout@v2
-        with:
-          submodules: true
-      - name: Build and test
-        run: docker build -t amr-wind -f docker/Dockerfile .
+#  Docker:
+#    needs: Formatting
+#    name: Docker
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Cancel previous runs
+#        uses: styfle/cancel-workflow-action@0.6.0
+#        with:
+#          access_token: ${{github.token}}
+#      - uses: actions/checkout@v2
+#        with:
+#          submodules: true
+#      - name: Build and test
+#        run: docker build -t amr-wind -f docker/Dockerfile .

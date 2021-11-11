@@ -37,6 +37,7 @@ option(AMR_WIND_ENABLE_NETCDF "Enable NetCDF library" OFF)
 option(AMR_WIND_ENABLE_MASA "Enable MASA library" OFF)
 option(AMR_WIND_ENABLE_HYPRE "Enable HYPRE integration" OFF)
 option(AMR_WIND_ENABLE_OPENFAST "Enable OpenFAST integration" OFF)
+option(AMR_WIND_ENABLE_ASCENT "Enable Ascent visualization library" OFF)
 
 #Options for C++
 set(CMAKE_CXX_STANDARD 14)
@@ -45,19 +46,21 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(AMR_WIND_ENABLE_CUDA)
   enable_language(CUDA)
-  # Fix issues with GPU builds
-  enable_language(Fortran)
   if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS "10.0")
     message(FATAL_ERROR "Your nvcc version is ${CMAKE_CUDA_COMPILER_VERSION} which is unsupported."
       "Please use CUDA toolkit version 10.0 or newer.")
+  endif()
+  # Fix issues with GPU builds
+  if(AMR_WIND_ENABLE_OPENFAST)
+    enable_language(Fortran)
   endif()
 endif()
 
 if (AMR_WIND_ENABLE_HIP)
   find_package(HIP REQUIRED)
   if (NOT DEFINED AMD_ARCH)
-    # Set default AMD architectures (based on Tulip for now)
-    set(AMD_ARCH "gfx906,gfx908")
+    # Set default AMD architectures (based on Spock)
+    set(AMD_ARCH "gfx908")
   endif()
 endif()
 
@@ -65,9 +68,6 @@ if(AMR_WIND_TEST_WITH_FCOMPARE)
   set(AMR_WIND_ENABLE_FCOMPARE ON)
 endif()
 
-if (AMR_WIND_ENABLE_OPENFAST)
-  enable_language(Fortran)
-endif()
 
 ########################### AMReX #####################################
 init_amrex()
@@ -95,7 +95,7 @@ set(aw_api_lib "amrwind_api")
 
 #Create main target executable
 add_library(${amr_wind_lib_name} OBJECT)
-add_library(${aw_api_lib} SHARED)
+add_library(${aw_api_lib})
 add_executable(${amr_wind_exe_name})
 
 init_code_checks()
@@ -135,6 +135,16 @@ if (AMR_WIND_ENABLE_OPENFAST)
   target_compile_definitions(${amr_wind_lib_name} PUBLIC AMR_WIND_USE_OPENFAST)
   target_include_directories(${amr_wind_lib_name} PUBLIC ${OpenFAST_INCLUDE_DIRS})
   target_link_libraries(${amr_wind_lib_name} PUBLIC ${OpenFAST_LIBRARIES})
+endif()
+
+if(AMR_WIND_ENABLE_ASCENT)
+  set(CMAKE_PREFIX_PATH ${ASCENT_DIR} ${CMAKE_PREFIX_PATH})
+  find_package(Ascent QUIET REQUIRED)
+  if (Ascent_FOUND)
+    message(STATUS "Found Ascent = ${ASCENT_INCLUDE_DIRS}")
+  endif()
+  target_link_libraries(${amr_wind_lib_name} PUBLIC ascent::ascent)
+  target_compile_definitions(${amr_wind_lib_name} PRIVATE AMR_WIND_USE_ASCENT)
 endif()
 
 #Build amr-wind and link to amrex library
